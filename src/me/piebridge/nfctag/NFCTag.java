@@ -1,5 +1,6 @@
 package me.piebridge.nfctag;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -14,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareClassic;
+import android.nfc.tech.NfcA;
 import android.os.Bundle;
 import android.widget.TextView;
 
@@ -47,7 +49,7 @@ public class NFCTag extends Activity {
 		} else {
 			text1.setText(android.R.string.search_go);
 		}
-		text2.setText("com.nxp.mifare: " + hasMifare(mContext));
+		text2.setText(getString(R.string.chip) + ": " + getNfcChip(mContext));
 		processIntent();
 	}
 
@@ -70,22 +72,47 @@ public class NFCTag extends Activity {
 			Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 
 			StringBuilder sb = new StringBuilder();
+
+			sb.append(getString(R.string.chip));
+			sb.append(": ");
+			sb.append(getNfcChip(mContext));
+			sb.append("\n");
+
 			sb.append("ID: ");
-			try {
-				long id = getDec(tag.getId());
-				sb.append(String.valueOf(id));
-				setClipContent(String.valueOf(id));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			long id = getDec(tag.getId());
+			sb.append(id);
+			setClipContent(String.valueOf(id));
 			sb.append("\n");
 
 			sb.append("HEX: ");
 			sb.append(getHex(tag.getId()));
+			sb.append("\n\n");
+
+			sb.append(getString(R.string.reversed) + "ID: ");
+			long id2 = getReverseDec(tag.getId());
+			sb.append(id2);
+			// setClipContent(String.valueOf(id));
 			sb.append("\n");
-			
+
+			sb.append(getString(R.string.reversed) + "HEX: ");
+			sb.append(getReverseHex(tag.getId()));
+			sb.append("\n\n");
+
+			NfcA na = NfcA.get(tag);
+			if (na != null) {
+				sb.append("========NfcA========\n");
+				sb.append("ATQA: ");
+				sb.append(getHex(na.getAtqa()));
+				sb.append("\n");
+
+				sb.append("SAK: ");
+				sb.append(na.getSak());
+				sb.append("\n\n");
+			}
+
 			MifareClassic mc = MifareClassic.get(tag);
 			if (mc != null) {
+				sb.append("========MifareClassic========\n");
 				sb.append("Type: ");
 				sb.append(getType(mc.getType()));
 				sb.append("\n");
@@ -94,7 +121,7 @@ public class NFCTag extends Activity {
 				sb.append("\n");
 				sb.append("Emulated: ");
 				sb.append(callReturnMethod(mc, "isEmulated", Boolean.class, null, null));
-				sb.append("\n");
+				sb.append("\n\n");
 			}
 
 			for (String tech : tag.getTechList()) {
@@ -142,7 +169,7 @@ public class NFCTag extends Activity {
 	}
 
 	private static String getHex(byte[] bytes) {
-		StringBuilder sb = new StringBuilder("0X");
+		StringBuilder sb = new StringBuilder("0x");
 		for (int i = bytes.length - 1; i > -1; --i) {
 			sb.append(String.format("%02X",  bytes[i] & 0xff));
 		}
@@ -152,6 +179,23 @@ public class NFCTag extends Activity {
 	private static long getDec(byte[] bytes) {
 		long id = 0L;
 		for (int i = bytes.length - 1; i > -1; --i) {
+			id <<= 8;
+			id |= bytes[i] & 0xff;
+		}
+		return id;
+	}
+
+	private static String getReverseHex(byte[] bytes) {
+		StringBuilder sb = new StringBuilder("0x");
+		for (int i = 0; i < bytes.length; ++i) {
+			sb.append(String.format("%02X", bytes[i] & 0xff));
+		}
+		return sb.toString();
+	}
+
+	private static long getReverseDec(byte[] bytes) {
+		long id = 0L;
+		for (int i = 0; i < bytes.length; ++i) {
 			id <<= 8;
 			id |= bytes[i] & 0xff;
 		}
@@ -183,6 +227,15 @@ public class NFCTag extends Activity {
 		return context.getPackageManager().hasSystemFeature("com.nxp.mifare");
 	}
 
+	public String getNfcChip(Context context) {
+		if (new File("/dev/pn544").exists()) {
+			return "PN544";
+		} else if (new File("/dev/bcm2079x-i2c").exists()) {
+			return "BCM2079X";
+		}
+		return context.getString(android.R.string.unknownName);
+	}
+
 //	public void emulate() {
 //		NfcAdapterExtras mAE = NfcAdapterExtras.get(nfcAdapter);
 //		NfcExecutionEnvironment mEE = mAE.getEmbeddedExecutionEnvironment();
@@ -192,4 +245,5 @@ public class NFCTag extends Activity {
 //		int route = CardEmulationRoute.ROUTE_ON_WHEN_SCREEN_ON;
 //		mAE.setCardEmulationRoute(new CardEmulationRoute(route, mEE));
 //	}
+
 }

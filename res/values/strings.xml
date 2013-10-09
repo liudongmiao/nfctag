@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="nfctag">NFC Tag</string>
+    <string name="chip">Chip</string>
+    <string name="reversed">Reversed </string>
 </resources>
