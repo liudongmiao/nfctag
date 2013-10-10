@@ -139,7 +139,7 @@ public class NFCTag extends Activity {
 				.setText(content);
 	}
 
-	private Object getSize(int size) {
+	private String getSize(int size) {
 		switch (size) {
 		case MifareClassic.SIZE_1K:
 			return "1K";
@@ -154,7 +154,7 @@ public class NFCTag extends Activity {
 		}
 	}
 
-	private Object getType(int type) {
+	private String getType(int type) {
 		switch (type) {
 		case MifareClassic.TYPE_CLASSIC:
 			return "classic";
